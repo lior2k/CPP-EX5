@@ -3,14 +3,24 @@ using namespace ariel;
 
 Node::Node(const std::string &data) {
     this->data = data;
+    this->next = NULL;
 }
 
 Node::Node(Node *n) {
     this->data = n->data;
+    this->next = n->next;
     for (Node *child : n->getChildren()) {
         Node tmp = new Node(child);
         this->children.push_back(&tmp);
     }
+}
+
+Node *Node::getNext() {
+    return this->next;
+}
+
+void Node::setNext(Node *next) {
+    this->next = next;
 }
 
 std::vector<Node*> Node::getChildren() {

@@ -3,32 +3,11 @@ using namespace ariel;
 
 // ------------------- Iterator --------------------
 OrgChart::Iterator::Iterator(Node *ptr) {
-    this->currentIndex = 0;
     nodePtr = ptr;
 } 
 
-OrgChart::Iterator::Iterator(Node *ptr, iterType type) {
-    this->currentIndex = 0;
-    this->nodePtr = ptr;
-    if (ptr == nullptr) {
-        return;
-    }
-    if (type == iterType::levelOrder) {
-        levelOrder();
-    }
-    if (type == iterType::reverseOrder) {
-        reverseOrder();
-    }
-    if (type == iterType::preOrder) {
-        preOrder();
-    }
-}
-
 OrgChart::Iterator& OrgChart::Iterator::operator++() {
-    nodePtr = list[++currentIndex];
-    if (currentIndex >= list.size()) {
-        nodePtr = NULL;
-    }
+    nodePtr = nodePtr->getNext();
     return *this;
 }
 
@@ -38,90 +17,19 @@ OrgChart::Iterator OrgChart::Iterator::operator++(int dummy) {
     return temp;
 }
 
-const std::string& OrgChart::Iterator::operator*() const {return this->list[currentIndex]->getData();}
+const std::string& OrgChart::Iterator::operator*() const {return this->nodePtr->getData();}
 
-const std::string* OrgChart::Iterator::operator->() const {return &this->list[currentIndex]->getData();}
+const std::string* OrgChart::Iterator::operator->() const {return &this->nodePtr->getData();}
 
 bool OrgChart::Iterator::operator==(const Iterator &iter) const {return this->nodePtr==iter.nodePtr;}
 
 bool OrgChart::Iterator::operator!=(const OrgChart::Iterator &it) const {return !(this->nodePtr==it.nodePtr);}
 
-/*
-    pretty similar to bfs on graphs, add root -> add his children -> for each added child add his children aswell
-*/
-void OrgChart::Iterator::levelOrder() {
-    std::vector<Node *> nodes;
-    nodes.push_back(nodePtr);
-    while (!nodes.empty()) {
-        Node *current = nodes[0];
-        nodes.erase(nodes.begin());
-        this->list.push_back(current);   
-        for (Node *child : current->getChildren()) {
-            nodes.push_back(child);
-        }
-    }
-}
-
-/*
-    similar to level order except add children from right to left instead of left to right,
-    then reverse the list to get the lowest rows first and the root last
-*/
-void OrgChart::Iterator::reverseOrder() {
-    std::vector<Node *> nodes;
-    std::vector<Node *>::reverse_iterator it;
-    nodes.push_back(nodePtr);
-    while (!nodes.empty()) {
-        Node *current = nodes[0];
-        nodes.erase(nodes.begin());
-        this->list.push_back(current);
-        // traverse the children from end to begin
-        for (uint i = current->getChildren().size()-1; i >= 0; i--) {
-            if (i == (uint) - 1) {
-                break;
-            }
-            nodes.push_back(current->getChildren()[(uint)i]);
-        }
-    }
-    reverseList();
-}
-
-void OrgChart::Iterator::reverseList() {
-    for (unsigned int i = 0; i < list.size() / 2; i++) {
-        swap(&list[i], &list[list.size()-1-i]);
-    }
-}
-
-void OrgChart::Iterator::swap(Node **first, Node **second) {
-    Node* temp = *first;
-    *first = *second;
-    *second = temp;
-}
-
-void OrgChart::Iterator::dfs(Node *ptr) {
-    list.push_back(ptr);
-    for (Node *child : ptr->getChildren()) {
-        dfs(child);
-    }
-}
-
-/*
-    add the root then add children and recursively add each child's children
-*/
-void OrgChart::Iterator::preOrder() {
-    dfs(nodePtr);
-}
-
-// print list for self debugging
-void OrgChart::Iterator::printList() {
-    for (unsigned int i = 0; i < list.size(); i++) {
-        std::cout << list[i]->getData() << " ";
-    }
-}
-
 // ----------------- end Iterator --------------------
 
 // ------------------- OrgChart -----------------------
 
+// ------------- OrgChart Constructors ----------------
 OrgChart::OrgChart() {
     root = nullptr;
 }
@@ -140,7 +48,9 @@ OrgChart::~OrgChart() {
         delete node;
     }
 }
+// ------------ End OrgChart Constructors ----------------
 
+// ---------------- OrgChart Operators -------------------
 // deep copy operator =
 OrgChart& OrgChart::operator=(const OrgChart &og) {
     if (this != &og) {
@@ -155,11 +65,52 @@ OrgChart& OrgChart::operator=(const OrgChart &og) {
     }
     return *this;
 }
+// --------------- End OrgChart Operators -------------------
 
+
+// -------------- OrgChart Help Functions -------------------
 std::vector<Node *> OrgChart::getNodes() const {
     return this->allNodes;
 }
 
+void OrgChart::swap(Node **first, Node **second) {
+    Node* temp = *first;
+    *first = *second;
+    *second = temp;
+}
+
+void OrgChart::reverseList(std::vector<Node *> &list) {
+    for (unsigned int i = 0; i < list.size() / 2; i++) {
+        swap(&list[i], &list[list.size()-1-i]);
+    }
+}
+
+/*
+    add the root then add children and recursively add each child's children
+*/
+void OrgChart::preorder(Node *ptr, std::vector<Node *> &list) const {
+    list.push_back(ptr);
+    for (Node *child : ptr->getChildren()) {
+        preorder(child, list);
+    }
+}
+
+// print list for self debugging
+void OrgChart::printList(std::vector<Node *> &list) {
+    for (unsigned int i = 0; i < list.size(); i++) {
+        std::cout << list[i]->getData() << " ";
+    }
+}
+
+void OrgChart::setNodesNextPointers(std::vector<Node *> &list) {
+    for (uint i = 0; i < list.size()-1; i++) {
+        list[i]->setNext(list[i+1]);
+    }
+    list[list.size()-1]->setNext(nullptr);
+}
+// ----------- --End OrgChart Help Functions -----------------
+
+// -------------- OrgChart Public Functions -------------------
 OrgChart& OrgChart::add_root(const std::string &root) {
     if (this->root != nullptr) {
         this->root->setData(root);
@@ -191,21 +142,97 @@ OrgChart& OrgChart::add_sub(const std::string &parent, const std::string &child)
     return *this;
 }
 
-OrgChart::Iterator OrgChart::begin_level_order() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(this->root, iterType::levelOrder);}
+OrgChart::Iterator OrgChart::begin_level_order() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    std::vector<Node *> list;
+    std::vector<Node *> nodes;
+    nodes.push_back(this->root);
+    while (!nodes.empty()) {
+        Node *current = nodes[0];
+        nodes.erase(nodes.begin());
+        list.push_back(current);   
+        for (Node *child : current->getChildren()) {
+            nodes.push_back(child);
+        }
+    }
+    OrgChart::setNodesNextPointers(list);
+    return OrgChart::Iterator(this->root);
+}
 
-OrgChart::Iterator OrgChart::end_level_order() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(nullptr, iterType::levelOrder);}
+OrgChart::Iterator OrgChart::end_level_order() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    return OrgChart::Iterator(nullptr);
+}
 
-OrgChart::Iterator OrgChart::begin_reverse_order() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(this->root, iterType::reverseOrder);}
+/*
+    similar to level order except add children from right to left instead of left to right,
+    then reverse the list to get the lowest rows first and the root last
+*/
+OrgChart::Iterator OrgChart::begin_reverse_order() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    std::vector<Node *> list;
+    std::vector<Node *> nodes;
+    nodes.push_back(this->root);
+    while (!nodes.empty()) {
+        Node *current = nodes[0];
+        nodes.erase(nodes.begin());
+        list.push_back(current);   
+        for (uint i = current->getChildren().size()-1; i >= 0; i--) {
+            if (i == (uint) - 1) {
+                break;
+            }
+            nodes.push_back(current->getChildren()[(uint)i]);
+        }
+    }
+    OrgChart::reverseList(list);
+    OrgChart::setNodesNextPointers(list);
+    return OrgChart::Iterator(list[0]);
+}
 
-OrgChart::Iterator OrgChart::reverse_order() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(nullptr, iterType::reverseOrder);}
+OrgChart::Iterator OrgChart::reverse_order() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    return OrgChart::Iterator(nullptr);
+}
 
-OrgChart::Iterator OrgChart::begin_preorder() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(this->root, iterType::preOrder);}
+OrgChart::Iterator OrgChart::begin_preorder() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    std::vector<Node *> list;
+    OrgChart::preorder(this->root, list);
+    OrgChart::setNodesNextPointers(list);
+    return OrgChart::Iterator(this->root);
+}
 
-OrgChart::Iterator OrgChart::end_preorder() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(nullptr, iterType::preOrder);}
+OrgChart::Iterator OrgChart::end_preorder() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    return OrgChart::Iterator(nullptr);
+}
 
-OrgChart::Iterator OrgChart::begin() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator(this->root, iterType::levelOrder);}
+OrgChart::Iterator OrgChart::begin() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    return OrgChart::begin_level_order();
+}
 
-OrgChart::Iterator OrgChart::end() const {if (root == nullptr) {throw std::logic_error("Chart is empty!");} return OrgChart::Iterator();}  
+OrgChart::Iterator OrgChart::end() const {
+    if (root == nullptr) {
+        throw std::logic_error("Chart is empty!");
+    }
+    return OrgChart::Iterator();
+}
+// ------------ End OrgChart Public Functions -------------------
 
 namespace ariel {
 

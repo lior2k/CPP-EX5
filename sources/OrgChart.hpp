@@ -6,17 +6,13 @@ namespace ariel {
 
     class OrgChart {
         public:
-        enum class iterType{levelOrder, reverseOrder, preOrder};
 
         class Iterator {
             private:
                 Node *nodePtr;
-                std::vector<Node *> list;
-                unsigned int currentIndex; 
             public:
                 // contructors
                 Iterator(Node *ptr = nullptr);
-                Iterator(Node *, iterType);
 
                 //operator overloading
                 Iterator& operator++();
@@ -26,20 +22,17 @@ namespace ariel {
                 bool operator==(const Iterator &iter) const;
                 bool operator!=(const OrgChart::Iterator &it) const;
 
-                //fill functions
-                void levelOrder();
-                void reverseOrder();
-                void preOrder();
-
-                //help functions
-                void reverseList();
-                static void swap(Node **first, Node **second);
-                void dfs(Node *);
-                void printList(); //print iterator's for debugging
         }; 
             private:
                 Node* root;
                 std::vector<Node *> allNodes;
+                //help functions
+                static void swap(Node **, Node **);
+                static void reverseList(std::vector<Node *> &);
+                std::vector<Node *> getNodes() const;
+                void preorder(Node *, std::vector<Node *> &) const;
+                static void setNodesNextPointers(std::vector<Node *> &);
+                static void printList(std::vector<Node *> &);
             public:
                 //default contructor
                 OrgChart();
@@ -49,8 +42,6 @@ namespace ariel {
                 OrgChart(const OrgChart &og);
                 OrgChart& operator=(const OrgChart &og);
                 
-                std::vector<Node *> getNodes() const;
-
                 OrgChart &add_root(const std::string &root);
                 OrgChart &add_sub(const std::string &parent, const std::string &child);
 
@@ -62,8 +53,7 @@ namespace ariel {
                 Iterator end_preorder() const;
                 Iterator begin() const;
                 Iterator end() const;
+                friend std::ostream& operator << (std::ostream &os, const OrgChart &oc);
     };
-
-    std::ostream& operator << (std::ostream &os, const OrgChart &oc);
 
 }
