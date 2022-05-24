@@ -10,8 +10,7 @@ Node::Node(Node *n) {
     this->data = n->data;
     this->next = n->next;
     for (Node *child : n->getChildren()) {
-        Node tmp = new Node(child);
-        this->children.push_back(&tmp);
+        this->children.push_back(new Node(child));
     }
 }
 

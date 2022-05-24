@@ -10,10 +10,11 @@ namespace ariel {
         class Iterator {
             private:
                 Node *nodePtr;
+                
             public:
                 // contructors
                 Iterator(Node *ptr = nullptr);
-
+                Node *getNodePtr();
                 //operator overloading
                 Iterator& operator++();
                 Iterator operator++(int);
@@ -36,11 +37,15 @@ namespace ariel {
             public:
                 //default contructor
                 OrgChart();
+                //move contructor
+                OrgChart(OrgChart &&og) noexcept;
                 //destructor
                 ~OrgChart();
                 // deep copy contructor and operator
                 OrgChart(const OrgChart &og);
-                OrgChart& operator=(const OrgChart &og);
+
+                OrgChart& operator=(OrgChart &&og) noexcept;
+                OrgChart& operator=(const OrgChart &og) noexcept;
                 
                 OrgChart &add_root(const std::string &root);
                 OrgChart &add_sub(const std::string &parent, const std::string &child);

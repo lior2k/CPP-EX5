@@ -6,6 +6,8 @@ OrgChart::Iterator::Iterator(Node *ptr) {
     nodePtr = ptr;
 } 
 
+Node * OrgChart::Iterator::getNodePtr() {return this->nodePtr;}
+
 OrgChart::Iterator& OrgChart::Iterator::operator++() {
     nodePtr = nodePtr->getNext();
     return *this;
@@ -34,12 +36,16 @@ OrgChart::OrgChart() {
     root = nullptr;
 }
 
+//move contructor
+OrgChart::OrgChart(OrgChart &&og) noexcept {
+    root = nullptr;
+    *this = og;
+}
+
 // deep copy constructor
 OrgChart::OrgChart(const OrgChart &og) {
-    root = new Node(og.root);
-    for (Node *node : og.allNodes) {
-        this->allNodes.push_back(new Node(node));
-    }
+    root = nullptr;
+    *this = og;
 }
 
 // destructor
@@ -52,7 +58,7 @@ OrgChart::~OrgChart() {
 
 // ---------------- OrgChart Operators -------------------
 // deep copy operator =
-OrgChart& OrgChart::operator=(const OrgChart &og) {
+OrgChart& OrgChart::operator=(const OrgChart &og) noexcept {
     if (this != &og) {
         if (og.root == nullptr) {
             this->root = nullptr;
@@ -63,6 +69,12 @@ OrgChart& OrgChart::operator=(const OrgChart &og) {
             }
         }
     }
+    return *this;
+}
+
+//move operator
+OrgChart& OrgChart::operator=(OrgChart &&og) noexcept {
+    *this = std::move(og);
     return *this;
 }
 // --------------- End OrgChart Operators -------------------
